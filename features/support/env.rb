@@ -6,10 +6,13 @@ def invoke_command(action, args)
   count = 100
   sleep 0.1 until Maze::Server.commands.remaining.empty? || (count -= 1) < 1
   $logger.info "#{Maze::Server.commands.remaining.size} commands after"
-  raise 'Test fixture did not GET /command' unless Maze::Server.commands.remaining.empty?
+  Maze::Server.commands.remaining.empty?
 end
 
-Maze.hooks.after do |_scenario|
+Maze.hooks.pre_complete do |scenario|
   $logger.info 'Issuing clearPersistentData command'
-  invoke_command('invoke_method', ['clearPersistentData'])
+  unless invoke_command('invoke_method', ['clearPersistentData'])
+    $logger.info 'Mark as failed'
+    Maze.scenario.mark_as_failed 'Fixture failed to GET clearPersistentData command - did it crash?'
+  end
 end

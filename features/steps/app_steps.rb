@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
 When('I run {string}') do |scenario_name|
-  invoke_command('run_scenario', [scenario_name])
+  raise 'Test fixture did not GET /command' unless invoke_command('run_scenario', [scenario_name])
 end
 
 When('I invoke {string}') do |method_name|
-  invoke_command method_name
+  raise 'Test fixture did not GET /command' unless invoke_command method_name
 end
 
 When('I invoke {string} with parameter {string}') do |method_name, arg1|
-  invoke_command('invoke_method', [method_name, arg1])
+  raise 'Test fixture did not GET /command' unless invoke_command('invoke_method', [method_name, arg1])
 end
 
 # Note:
