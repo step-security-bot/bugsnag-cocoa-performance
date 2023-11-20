@@ -11,9 +11,18 @@ import Foundation
 typealias MazerunnerMeasurement = (name: String, metrics: [String: Any])
 
 class Scenario: NSObject {
+    let fixtureConfig: FixtureConfig
     var config = BugsnagPerformanceConfiguration.loadConfig()
     var pendingMeasurements: [MazerunnerMeasurement] = []
     
+    private override init() {
+        fatalError("do not use the default init of Scenario")
+    }
+    
+    required init(fixtureConfig: FixtureConfig) {
+        self.fixtureConfig = fixtureConfig
+    }
+
     func configure() {
         NSLog("Scenario.configure()")
         
@@ -25,7 +34,7 @@ class Scenario: NSObject {
         config.autoInstrumentAppStarts = false
         config.autoInstrumentNetworkRequests = false
         config.autoInstrumentViewControllers = false
-        config.endpoint = URL(string:"\(Fixture.mazeRunnerURL)/traces")!
+        config.endpoint = fixtureConfig.tracesURL
         // Discard any spans for internally generated requests to avoid confusing scenarios
         config.networkRequestCallback = { (info: BugsnagPerformanceNetworkRequestInfo) -> BugsnagPerformanceNetworkRequestInfo in
             let url = info.url!
@@ -55,6 +64,17 @@ class Scenario: NSObject {
         fatalError("To be implemented by subclass")
     }
     
+    func isMazeRunnerAdministrationURL(url: URL) -> Bool {
+        switch url {
+        case fixtureConfig.tracesURL, fixtureConfig.commandURL, fixtureConfig.metricsURL:
+            return true
+        case fixtureConfig.reflectURL:
+            return false // reflectURL is fair game!
+        default:
+            return false
+        }
+    }
+
     func reportMeasurements() {
         pendingMeasurements.forEach { measurement in
             report(metrics: measurement.metrics, name: measurement.name)
@@ -80,10 +100,7 @@ class Scenario: NSObject {
     }
     
     func report(metrics: [String: Any], name: String) {
-        guard let url = URL(string: "\(Fixture.mazeRunnerURL)/metrics") else {
-            return
-        }
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: fixtureConfig.metricsURL)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
